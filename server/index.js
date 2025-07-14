@@ -93,6 +93,13 @@ server.on('secureConnection', (tlsSocket) => {
       authorizationError: tlsSocket.authorizationError || null,
       serverPublicKey: serverPublicKey
     });
+
+    // Simulate handshake response (server to client)
+    handshakeSteps.push({
+      time: new Date().toISOString(),
+      step: `TLS handshake response sent to: ${tlsSocket.remoteAddress}`,
+      direction: 'server-to-client'
+    });
   });
 });
 
