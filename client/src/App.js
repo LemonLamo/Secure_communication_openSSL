@@ -10,15 +10,49 @@ function App() {
   const [sslSteps, setSslSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(-1);
   const [showSteps, setShowSteps] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [cardType, setCardType] = useState("");
+
+  // Card type detection
+  function detectCardType(number) {
+    if (/^4/.test(number)) return "Visa";
+    if (/^5[1-5]/.test(number)) return "MasterCard";
+    if (/^3[47]/.test(number)) return "American Express";
+    if (/^6(?:011|5)/.test(number)) return "Discover";
+    return "";
+  }
+
+  const handleCardChange = (e) => {
+    const value = e.target.value.replace(/\D/g, "");
+    setCardType(detectCardType(value));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = {
-      name: e.target.name.value,
-      card: e.target.card.value,
-      cvv: e.target.cvv.value,
-      exp: e.target.exp.value,
+      name: e.target.name.value.trim(),
+      card: e.target.card.value.trim(),
+      cvv: e.target.cvv.value.trim(),
+      exp: e.target.exp.value.trim(),
+      cardType: cardType,
     };
+
+    // Validation
+    const errors = {};
+    if (!data.name) errors.name = "Name is required.";
+    if (!/^\d{16}$/.test(data.card)) errors.card = "Card number must be 16 digits.";
+    if (!/^\d{3,4}$/.test(data.cvv)) errors.cvv = "CVV must be 3 or 4 digits.";
+    if (!/^(0[1-9]|1[0-2])\/(\d{2})$/.test(data.exp)) {
+      errors.exp = "Expiry must be MM/YY.";
+    } else {
+      // Check not expired
+      const [mm, yy] = data.exp.split('/');
+      const expDate = new Date(2000 + parseInt(yy, 10), parseInt(mm, 10));
+      const now = new Date();
+      if (expDate < now) errors.exp = "Card is expired.";
+    }
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
     try {
       const res = await fetch("https://localhost:4443/checkout", {
@@ -60,15 +94,28 @@ function App() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', width: '100vw', background: 'linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%)' }}>
+    <Box sx={{ minHeight: '100vh', width: '100vw',  background: 'linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%)', zIndex: -1 }}>
       <Container sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', py: 4 }}>
         <Box sx={{ background: '#fff', borderRadius: 4, boxShadow: 4, p: 4, width: '100%', maxWidth: 600, mb: 4 }}>
           <Typography variant="h4" gutterBottom align="center" color="primary">Secure Checkout</Typography>
-          <form onSubmit={handleSubmit}>
-            <TextField name="name" label="Full Name" fullWidth margin="normal" />
-            <TextField name="card" label="Card Number" fullWidth margin="normal" />
-            <TextField name="cvv" label="CVV" fullWidth margin="normal" />
-            <TextField name="exp" label="Expiry Date (MM/YY)" fullWidth margin="normal" />
+          <form onSubmit={handleSubmit} noValidate>
+            <TextField name="name" label="Full Name" fullWidth margin="normal" error={!!formErrors.name} helperText={formErrors.name} />
+            <TextField
+              name="card"
+              label="Card Number"
+              fullWidth
+              margin="normal"
+              error={!!formErrors.card}
+              helperText={formErrors.card}
+              onChange={handleCardChange}
+            />
+            {cardType && (
+              <Typography variant="caption" color="primary" sx={{ ml: 1 }}>
+                Detected: {cardType}
+              </Typography>
+            )}
+            <TextField name="cvv" label="CVV" fullWidth margin="normal" error={!!formErrors.cvv} helperText={formErrors.cvv} />
+            <TextField name="exp" label="Expiry Date (MM/YY)" fullWidth margin="normal" error={!!formErrors.exp} helperText={formErrors.exp} />
             <Box mt={2} display="flex" justifyContent="center">
               <Button type="submit" variant="contained" color="primary" size="large">Pay Securely</Button>
             </Box>
