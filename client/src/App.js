@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { TextField, Button, Typography, Container, Box, Stepper, Step, StepLabel, Avatar } from "@mui/material";
+import { TextField, Button, Typography, Container, Box, Tooltip, IconButton } from "@mui/material";
 import ComputerIcon from '@mui/icons-material/Computer';
 import DnsIcon from '@mui/icons-material/Dns';
-import LockIcon from '@mui/icons-material/Lock';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 
 function App() {
@@ -40,6 +40,24 @@ function App() {
       console.error("Secure payment failed", err);
     }
   };
+
+  // Explanations for each step type
+  const stepExplanations = {
+    'tcp': 'A TCP connection is established between the client and server. This is the first step before any secure communication can happen.',
+    'handshake started': 'The TLS handshake begins. The client and server negotiate security parameters and exchange information to set up a secure channel.',
+    'handshake completed': 'The TLS handshake is completed. Both parties have agreed on encryption algorithms and exchanged keys. Secure communication can now begin.',
+    'handshake response': 'The server sends a final handshake response to the client, confirming the secure channel is ready for encrypted data transfer.',
+  };
+
+  // Helper to get explanation for a step
+  function getStepExplanation(step) {
+    const s = step.step.toLowerCase();
+    if (s.includes('tcp')) return stepExplanations['tcp'];
+    if (s.includes('handshake started')) return stepExplanations['handshake started'];
+    if (s.includes('handshake completed')) return stepExplanations['handshake completed'];
+    if (s.includes('handshake response')) return stepExplanations['handshake response'];
+    return '';
+  }
 
   return (
     <Container maxWidth="sm">
@@ -90,10 +108,18 @@ function App() {
                   {/* Client step */}
                   <Box flex={1} textAlign="left" minWidth={120}>
                     {isClient && (
-                      <Box sx={{ background: '#f9f9f9', p: 2, borderRadius: 2, width: '100%', maxWidth: 300 }}>
+                      <Box sx={{ background: '#f9f9f9', p: 2, borderRadius: 2, width: '100%', maxWidth: 300, position: 'relative' }}>
+                        <Box display="flex" alignItems="center" mb={1}>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', mr: 1 }}>Step:</Typography>
+                          <Typography variant="body2">{step.step}</Typography>
+                          <Tooltip title={getStepExplanation(step)} placement="top" arrow>
+                            <IconButton size="small" sx={{ ml: 1 }}>
+                              <InfoOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                         <Typography variant="body2">
                           <b>Time:</b> {step.time} <br />
-                          <b>Step:</b> {step.step} <br />
                           {step.protocol && (<><b>Protocol:</b> {step.protocol} <br /></>)}
                           {step.cipher && (<><b>Cipher:</b> {step.cipher.name} <br /></>)}
                           {step.peerCertificate && (<><b>Peer Certificate Subject:</b> {JSON.stringify(step.peerCertificate)} <br /></>)}
@@ -123,10 +149,18 @@ function App() {
                   {/* Server step */}
                   <Box flex={1} textAlign="right" minWidth={120}>
                     {isServer && (
-                      <Box sx={{ background: '#f9f9f9', p: 2, borderRadius: 2, width: '100%', maxWidth: 300, ml: 'auto' }}>
+                      <Box sx={{ background: '#f9f9f9', p: 2, borderRadius: 2, width: '100%', maxWidth: 300, ml: 'auto', position: 'relative' }}>
+                        <Box display="flex" alignItems="center" mb={1} justifyContent="flex-end">
+                          <Tooltip title={getStepExplanation(step)} placement="top" arrow>
+                            <IconButton size="small" sx={{ mr: 1 }}>
+                              <InfoOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', ml: 1 }}>Step:</Typography>
+                          <Typography variant="body2">{step.step}</Typography>
+                        </Box>
                         <Typography variant="body2">
                           <b>Time:</b> {step.time} <br />
-                          <b>Step:</b> {step.step} <br />
                           {step.protocol && (<><b>Protocol:</b> {step.protocol} <br /></>)}
                           {step.cipher && (<><b>Cipher:</b> {step.cipher.name} <br /></>)}
                           {step.peerCertificate && (<><b>Peer Certificate Subject:</b> {JSON.stringify(step.peerCertificate)} <br /></>)}
